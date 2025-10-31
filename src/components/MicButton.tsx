@@ -1,11 +1,14 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
 import { WaveFile } from "wavefile";
+import { useDispatch } from "react-redux";
+import { addMessage } from "../Store/conversationSlice";
 
 const MicButton: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
+  const dispatch = useDispatch();
 
   const startRecording = async () => {
     try {
@@ -28,13 +31,22 @@ const MicButton: React.FC = () => {
 
         const wav = new WaveFile();
         wav.fromScratch(1, audioBuffer.sampleRate, "16", pcmData);
-
         const wavBytes = new Uint8Array(wav.toBuffer());
         const wavBlob = new Blob([wavBytes], { type: "audio/wav" });
 
-        console.log("🎧 WAV file ready:", wavBlob);
+        // ✅ Verification logs
+        console.log("🎧 WAV file successfully converted!");
+        console.log("📁 Type:", wavBlob.type);
+        console.log("📏 Size:", wavBlob.size, "bytes");
 
-        // ✅ SEND TO BACKEND (mock)
+        // ✅ (Optional) Auto-download the WAV file for manual check
+        const url = URL.createObjectURL(wavBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "recording.wav";
+        a.click();
+
+        // ✅ SEND TO BACKEND
         const formData = new FormData();
         formData.append("file", wavBlob, "recording.wav");
 
@@ -43,16 +55,24 @@ const MicButton: React.FC = () => {
             headers: { "Content-Type": "multipart/form-data" },
           });
           console.log("✅ Uploaded successfully:", response.data);
+
+          dispatch(addMessage({ role: "user", text: "🎤 Sent voice message..." }));
+          if (response.data?.transcript) {
+            dispatch(addMessage({ role: "assistant", text: response.data.transcript }));
+          } else {
+            dispatch(addMessage({ role: "assistant", text: "⚠️ No transcript received from backend." }));
+          }
         } catch (err) {
           console.error("❌ Upload failed:", err);
+          dispatch(addMessage({ role: "assistant", text: "❌ Upload failed, please try again." }));
         }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error("Mic access error:", err);
-      alert("Microphone not available or permission denied");
+      console.error("🎙️ Mic access error:", err);
+      alert("Microphone not available or permission denied.");
     }
   };
 
