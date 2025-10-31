@@ -6,6 +6,7 @@ import { addMessage } from "../Store/conversationSlice";
 
 const MicButton: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const dispatch = useDispatch();
@@ -22,9 +23,11 @@ const MicButton: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        // 🧩 Combine chunks into one blob
         const audioBlob = new Blob(chunks.current, { type: "audio/webm" });
         const arrayBuffer = await audioBlob.arrayBuffer();
 
+        // 🎵 Decode audio and convert to WAV (16-bit PCM)
         const audioContext = new AudioContext();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         const pcmData = audioBuffer.getChannelData(0);
@@ -34,24 +37,20 @@ const MicButton: React.FC = () => {
         const wavBytes = new Uint8Array(wav.toBuffer());
         const wavBlob = new Blob([wavBytes], { type: "audio/wav" });
 
-        // ✅ Verification logs
-        console.log("🎧 WAV file successfully converted!");
+        // 🎧 Create a local URL to play the converted WAV
+        const url = URL.createObjectURL(wavBlob);
+        setAudioUrl(url);
+
+        console.log("🎧 WAV file ready:", wavBlob);
         console.log("📁 Type:", wavBlob.type);
         console.log("📏 Size:", wavBlob.size, "bytes");
-
-        // ✅ (Optional) Auto-download the WAV file for manual check
-        const url = URL.createObjectURL(wavBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "recording.wav";
-        a.click();
 
         // ✅ SEND TO BACKEND
         const formData = new FormData();
         formData.append("file", wavBlob, "recording.wav");
 
         try {
-          const response = await axios.post("http://localhost:8000/api/stt", formData, {
+          const response = await axios.post("http://192.168.29.231:8000/stt/", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
           console.log("✅ Uploaded successfully:", response.data);
@@ -59,8 +58,6 @@ const MicButton: React.FC = () => {
           dispatch(addMessage({ role: "user", text: "🎤 Sent voice message..." }));
           if (response.data?.transcript) {
             dispatch(addMessage({ role: "assistant", text: response.data.transcript }));
-          } else {
-            dispatch(addMessage({ role: "assistant", text: "⚠️ No transcript received from backend." }));
           }
         } catch (err) {
           console.error("❌ Upload failed:", err);
@@ -69,6 +66,7 @@ const MicButton: React.FC = () => {
       };
 
       mediaRecorder.start();
+      
       setIsRecording(true);
     } catch (err) {
       console.error("🎙️ Mic access error:", err);
@@ -82,14 +80,25 @@ const MicButton: React.FC = () => {
   };
 
   return (
-    <button
-      onClick={isRecording ? stopRecording : startRecording}
-      className={`rounded-full p-4 mt-4 text-white text-lg transition-all ${
-        isRecording ? "bg-red-500 animate-pulse" : "bg-green-500 hover:bg-green-600"
-      }`}
-    >
-      {isRecording ? "🛑 Stop Listening" : "🎙️ Start Listening"}
-    </button>
+    <div className="flex flex-col items-center gap-4 mt-4">
+      <button
+        onClick={isRecording ? stopRecording : startRecording}
+        className={`rounded-full p-4 text-white text-lg transition-all ${
+          isRecording ? "bg-red-500 animate-pulse" : "bg-green-500 hover:bg-green-600"
+        }`}
+      >
+        {isRecording ? "🛑 Stop Listening" : "🎙️ Start Listening"}
+      </button>
+
+      {/* 🎧 Audio preview player */}
+      {audioUrl && (
+        <audio
+          controls
+          src={audioUrl}
+          className="mt-3 w-64 rounded-lg shadow-sm border border-gray-300"
+        ></audio>
+      )}
+    </div>
   );
 };
 
