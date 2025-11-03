@@ -5,10 +5,8 @@ import { store } from './Store/store';
 import App from './App';
 
 
-
-
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
-    <App />
-  </Provider>,
-)
+    <App/>
+  </Provider>
+);
