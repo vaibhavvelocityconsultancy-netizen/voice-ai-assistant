@@ -45,7 +45,7 @@ const Sidebar = ({ chats = [], activeChat, onSelectChat, onNewChat }: { chats: a
             className="w-16 h-16 rounded-full border-2 border-blue-500 shadow-md animate-pulse"
           />
 
-          <h2 className="text-black font-semibold text-lg">AI Receptionist - Nato</h2>
+          <h2 className="text-black font-semibold text-lg">AI Receptionist - SARAH</h2>
           <p className="text-gray-800 text-xs text-center">
             Your smart assistant for patient queries
           </p>

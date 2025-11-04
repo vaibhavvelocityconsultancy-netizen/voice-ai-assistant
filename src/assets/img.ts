@@ -1,5 +1,4 @@
-import doctor_img from './Nate.png';
-
+import doctor_img from './Milly.png';
 export const img = {
     doctor_img
 }
