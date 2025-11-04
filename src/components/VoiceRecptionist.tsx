@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { img } from "../assets/img";
 
@@ -199,6 +199,13 @@ const VoiceReceptionist = () => {
     if (index >= 0 && index < chats.length) setActiveChat(index);
   };
 
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+
   // 🎤 Mic button component
   const MicButton = ({ recording, onToggle }: { recording: boolean; onToggle: () => void }) => (
     <button
@@ -278,6 +285,9 @@ const VoiceReceptionist = () => {
                   Typing...
                 </div>
               )}
+
+              <div ref={messagesEndRef} />
+
             </div>
 
             <MicButton

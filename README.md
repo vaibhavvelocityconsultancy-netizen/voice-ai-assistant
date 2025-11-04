@@ -64,6 +64,8 @@ const VoiceReceptionist = () => {
     speechSynthesis.speak(utterance);
   };
 
+  const recognizedTextRef = useRef<string>("");
+
   // 🎤 Speech Recognition setup
   const startSpeechRecognition = () => {
     const SpeechRecognition =
@@ -80,9 +82,18 @@ const VoiceReceptionist = () => {
     recognition.continuous = true;
 
     recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
+      let transcript = Array.from(event.results)
         .map((r: any) => r[0].transcript)
         .join("");
+
+      // ✨ Optional: clean up numeric ranges like "325" → "3 to 25"
+      // transcript = transcript
+      //   .replace(/\b(\d)(\d{2})\b/g, "$1 to $2")
+      //   .replace(/\b(\d)\s+(\d{2})\b/g, "$1 to $2");
+
+      recognizedTextRef.current = transcript; // 👈 store latest text
+
+      console.log("🎤 User said:", transcript);
 
       setChats((prev) => {
         const updated = [...prev];
@@ -118,6 +129,9 @@ const VoiceReceptionist = () => {
         try {
           const formData = new FormData();
           formData.append("file", audioBlob, "audio.webm");
+
+          // 👇 Add recognized text also
+          formData.append("text", recognizedTextRef.current || "");
 
           const response = await fetch("http://127.0.0.1:8000/stt", {
             method: "POST",
@@ -260,7 +274,7 @@ const VoiceReceptionist = () => {
               ))}
 
               {loading && (
-                <div className="bg-gray-600 text-left mr-auto w-fit max-w-[85%] my-2 p-2 md:p-3 rounded-xl animate-pulse text-sm md:text-base">
+                <div className="bg-green-600 text-left mr-auto w-fit max-w-[85%] my-2 p-2 md:p-3 rounded-xl animate-pulse text-sm md:text-base">
                   Typing...
                 </div>
               )}
