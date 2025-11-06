@@ -1,119 +1,121 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import { img } from "../assets/img";
+
+// ✅ Types
+interface Message {
+  from: "user" | "ai";
+  text: string;
+}
+
+interface Chat {
+  title: string;
+  messages: Message[];
+}
+
+// ✅ Extend browser SpeechRecognition type
+type ExtendedSpeechRecognition = SpeechRecognition;
 
 const VoiceReceptionist = () => {
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
-  const [chats, setChats] = useState([{ title: "Chat 1", messages: [] }]);
+
+  const [chats, setChats] = useState<Chat[]>([
+    { title: "Chat 1", messages: [] },
+  ]);
+
   const [activeChat, setActiveChat] = useState(0);
-  const recognitionRef = useRef<any>(null);
 
-  const messages = chats[activeChat]?.messages || [];
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognizedTextRef = useRef<string>("");
 
-  // 🧠 Fetch Greeting after Start Chat button is clicked
-  const handleStartChat = async () => {
-    setChatStarted(true);
-    try {
-      const response = await fetch("http://127.0.0.1:8000/start");
-      console.log("Headers:", [...response.headers.entries()]);
+  const messages = useMemo(
+    () => chats[activeChat]?.messages ?? [],
+    [chats, activeChat]
+  );
 
-      if (!response.ok) throw new Error("Greeting fetch failed");
-
-      const botReply = response.headers.get("X-Text-Response") || "Hi there!";
-      console.log("Bot reply:", botReply);
-
-      const responseBlob = await response.blob();
-
-      // 💬 Update chat UI
-      setChats((prev) => {
-        const updated = [...prev];
-        updated[activeChat].messages.push({ from: "ai", text: botReply });
-        return updated;
-      });
-
-      // 🎵 Play backend audio
-      if (responseBlob.type.startsWith("audio/") && responseBlob.size > 0) {
-        const audioUrl = URL.createObjectURL(responseBlob);
-        const audio = new Audio(audioUrl);
-
-        audio.onerror = (e) => {
-          console.error("Audio playback error:", e);
-          speakText(botReply); // fallback TTS
-        };
-
-        await audio.play().catch((err) => {
-          console.error("Audio play failed:", err);
-          speakText(botReply);
-        });
-      } else {
-        console.warn("No valid audio in response — using browser TTS");
-        speakText(botReply);
-      }
-    } catch (err) {
-      console.error("Greeting error:", err);
-      speakText("Sorry, I couldn’t fetch the greeting. Please try again.");
-    }
-  };
-
-  // 🔊 Browser fallback TTS
+  // ✅ Browser TTS
   const speakText = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     speechSynthesis.speak(utterance);
   };
 
-  const recognizedTextRef = useRef<string>("");
+  // ✅ Start Chat (Greeting)
+  const handleStartChat = async () => {
+    setChatStarted(true);
 
-  // 🎤 Speech Recognition setup
+    try {
+      const response = await fetch("http://127.0.0.1:8000/start");
+
+      if (!response.ok) throw new Error("Greeting failed");
+
+      const botReply = response.headers.get("X-Text-Response") || "Hi there!";
+      const responseBlob: Blob = await response.blob();
+
+      setChats((prevChats) => {
+        const updated = [...prevChats];
+        updated[activeChat].messages.push({ from: "ai", text: botReply });
+        return updated;
+      });
+
+      // ✅ If backend sends audio + play it
+      if (responseBlob.type.startsWith("audio/")) {
+        const audio = new Audio(URL.createObjectURL(responseBlob));
+        await audio.play().catch(() => speakText(botReply));
+      } else {
+        speakText(botReply);
+      }
+    } catch {
+      speakText("Sorry, I couldn’t fetch the greeting. Please try again.");
+    }
+  };
+
+  // ✅ Speech Recognition (no any)
   const startSpeechRecognition = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    // ✅ declare constructor from window properly
+    const SpeechRecognitionConstructor =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      console.warn("Speech Recognition not supported in this browser");
+    if (!SpeechRecognitionConstructor) {
+      console.warn("Speech Recognition not supported in browser");
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition =
+      new SpeechRecognitionConstructor() as ExtendedSpeechRecognition;
+
     recognition.lang = "en-US";
     recognition.interimResults = true;
     recognition.continuous = true;
 
-    recognition.onresult = (event: any) => {
-      let transcript = Array.from(event.results)
-        .map((r: any) => r[0].transcript)
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map((res) => res[0].transcript)
         .join("");
 
-      // ✨ Optional: clean up numeric ranges like "325" → "3 to 25"
-      // transcript = transcript
-      //   .replace(/\b(\d)(\d{2})\b/g, "$1 to $2")
-      //   .replace(/\b(\d)\s+(\d{2})\b/g, "$1 to $2");
+      recognizedTextRef.current = transcript;
 
-      recognizedTextRef.current = transcript; // 👈 store latest text
+      setChats((prevChats) => {
+        const updated = [...prevChats];
+        const lastMessage = updated[activeChat].messages.at(-1);
 
-      console.log("🎤 User said:", transcript);
+        if (lastMessage?.from === "user") lastMessage.text = transcript;
+        else
+          updated[activeChat].messages.push({ from: "user", text: transcript });
 
-      setChats((prev) => {
-        const updated = [...prev];
-        const chat = updated[activeChat] || { messages: [] };
-        const lastMsg = chat.messages.at(-1);
-        if (lastMsg && lastMsg.from === "user") lastMsg.text = transcript;
-        else chat.messages.push({ from: "user", text: transcript });
-        updated[activeChat] = chat;
         return updated;
       });
     };
 
     recognitionRef.current = recognition;
     recognition.start();
+    setRecording(true);
   };
 
-  const stopSpeechRecognition = () => recognitionRef.current?.stop?.();
+  const stopSpeechRecognition = () => recognitionRef.current?.stop();
 
-  // 🎙️ Record & Send audio to backend
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -124,6 +126,7 @@ const VoiceReceptionist = () => {
 
       mediaRecorder.onstop = async () => {
         stopSpeechRecognition();
+
         const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
         setLoading(true);
 
@@ -137,37 +140,23 @@ const VoiceReceptionist = () => {
             body: formData,
           });
 
-          if (!response.ok) throw new Error(await response.text());
-
-          const botReply = response.headers.get("X-Text-Response");
+          const botReply = response.headers.get("X-Text-Response") ?? "";
           const responseBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(responseBlob);
+          const audio = new Audio(URL.createObjectURL(responseBlob));
 
-          const audio = new Audio(audioUrl);
-
-          audio.onerror = (e) => {
-            console.error("Audio error:", e);
-            speakText(botReply || "Sorry, I didn’t catch that.");
-          };
-
-          await audio.play().catch((err) => {
-            console.error("Audio play failed:", err);
-            speakText(botReply || "Sorry, I didn’t catch that.");
-          });
+          audio.onerror = () => speakText(botReply);
+          await audio.play().catch(() => speakText(botReply));
 
           setChats((prev) => {
             const updated = [...prev];
             updated[activeChat].messages.push({ from: "ai", text: botReply });
             return updated;
           });
-        } catch (err) {
-          console.error("Backend error:", err);
         } finally {
           setLoading(false);
         }
       };
 
-      // Temporary user message
       setChats((prev) => {
         const updated = [...prev];
         updated[activeChat].messages.push({ from: "user", text: "..." });
@@ -186,25 +175,17 @@ const VoiceReceptionist = () => {
     }
   };
 
-  // ➕ New chat
-  const handleNewChat = () => {
-    const newChat = { title: `Chat ${chats.length + 1}`, messages: [] };
-    setChats([...chats, newChat]);
-    setActiveChat(chats.length);
-  };
-
-  // 🔘 Select chat
-  const handleSelectChat = (index: number) => {
-    if (index >= 0 && index < chats.length) setActiveChat(index);
-  };
-
+  // ✅ Scroll on new message
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // 🎤 Mic button component
+  const handleNewChat = () => {
+    setChats([...chats, { title: `Chat ${chats.length + 1}`, messages: [] }]);
+    setActiveChat(chats.length);
+  };
+
   const MicButton = ({
     recording,
     onToggle,
@@ -221,9 +202,6 @@ const VoiceReceptionist = () => {
             : "bg-green-500 hover:bg-green-600"
         }`}
     >
-      {recording && (
-        <span className="absolute inset-0 rounded-full border-4 border-red-500 animate-ping"></span>
-      )}
       {!recording ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -257,35 +235,28 @@ const VoiceReceptionist = () => {
     </button>
   );
 
-  // 🧩 Render UI
   return (
     <div className="flex h-screen bg-gray-100 text-black">
       {!chatStarted ? (
         <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gray-100 p-6">
-          {/* Glass card */}
           <div className="backdrop-blur-xl bg-white/40 border border-white/30 shadow-lg rounded-3xl p-10 flex flex-col items-center text-center">
-            {/* Avatar */}
             <div className="relative w-44 h-44 mb-6 border-4 border-blue-500 rounded-full overflow-hidden shadow-md">
               <img
                 src={img.doctor_img}
                 alt="AI Avatar"
                 className="w-full h-full object-cover rounded-full"
               />
-              <div className="absolute inset-0 rounded-full border-4 border-blue-400/30" />
             </div>
 
-            {/* Title */}
             <h1 className="text-3xl font-bold text-blue-800 mb-3">
               🏥 Welcome to{" "}
               <span className="text-blue-600">Voice AI Receptionist</span>
             </h1>
 
-            {/* Subtitle */}
             <p className="text-gray-600 mb-8 max-w-md">
               Click below to start your conversation with our AI receptionist.
             </p>
 
-            {/* Button */}
             <button
               onClick={handleStartChat}
               className="bg-green-600 px-8 py-3 rounded-xl text-white text-lg font-medium hover:bg-green-700 transition-all border-none"
@@ -299,12 +270,12 @@ const VoiceReceptionist = () => {
           <Sidebar
             chats={chats}
             activeChat={activeChat}
-            onSelectChat={handleSelectChat}
+            onSelectChat={setActiveChat}
             onNewChat={handleNewChat}
           />
 
           <div className="flex flex-col flex-1 items-center justify-center">
-            <h1 className="text-[clamp(1.25rem,2vw+0.5rem,1.5rem)] font-semibold mb-4">
+            <h1 className="text-xl font-semibold mb-4">
               🏥 AI Voice Receptionist
             </h1>
 
@@ -316,7 +287,6 @@ const VoiceReceptionist = () => {
                     m.from === "user" ? "items-end" : "items-start"
                   }`}
                 >
-                  {/* 💬 Sender label */}
                   <span
                     className={`text-xs font-semibold mb-1 ${
                       m.from === "user" ? "text-blue-700" : "text-green-700"
@@ -325,12 +295,11 @@ const VoiceReceptionist = () => {
                     {m.from === "user" ? "You" : "AI Receptionist"}
                   </span>
 
-                  {/* 💭 Message bubble */}
                   <div
-                    className={`p-2 md:p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${
+                    className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${
                       m.from === "user"
-                        ? "bg-gradient-to-tl from-[#FBD6FF] to-[#C3EEFF] text-right ml-auto w-fit max-w-[85%]"
-                        : "bg-gradient-to-tl from-[#C3EEFF] to-[#FBD6FF] text-left mr-auto w-fit max-w-[85%]"
+                        ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
+                        : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
                     }`}
                   >
                     {m.text}
@@ -339,7 +308,7 @@ const VoiceReceptionist = () => {
               ))}
 
               {loading && (
-                <div className="bg-green-600 text-left mr-auto w-fit max-w-[85%] my-2 p-2 md:p-3 rounded-xl animate-pulse text-sm md:text-base">
+                <div className="bg-green-600 w-fit p-3 rounded-xl text-white animate-pulse">
                   Typing...
                 </div>
               )}
@@ -351,8 +320,8 @@ const VoiceReceptionist = () => {
               recording={recording}
               onToggle={() => {
                 if (recording) {
-                  setRecording(false);
                   stopSpeechRecognition();
+                  setRecording(false);
                 } else {
                   startRecording();
                 }

@@ -1,8 +1,22 @@
-import React, { useState } from "react";
-import { Plus, MessageSquare, X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import { img } from "../assets/img";
+import { useState } from "react";
+interface Chat {
+  title: string;
+  messages: { from: "user" | "ai"; text: string }[];
+}
 
-const Sidebar = ({ chats = [], activeChat, onSelectChat, onNewChat }: { chats: any[], activeChat: number, onSelectChat: (index: number) => void, onNewChat: (arg: string) => number }) => {
+const Sidebar = ({
+  chats = [],
+  activeChat,
+  onSelectChat,
+ 
+}: {
+  chats: Chat[];
+  activeChat: number;
+  onSelectChat: (index: number) => void;
+  onNewChat: () => void;
+}) =>{
   const [isOpen, setIsOpen] = useState(false);
 
   return (

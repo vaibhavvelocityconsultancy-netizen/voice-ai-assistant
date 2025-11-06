@@ -1,6 +1,4 @@
-import React from "react";
 import VoiceReceptionist from "./components/VoiceRecptionist";
-import Sidebar from "./components/Sidebar";
 
 const App = () => {
   return (

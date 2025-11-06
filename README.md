@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { img } from "../assets/img";
 
@@ -69,7 +69,8 @@ const VoiceReceptionist = () => {
   // 🎤 Speech Recognition setup
   const startSpeechRecognition = () => {
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       console.warn("Speech Recognition not supported in this browser");
@@ -199,22 +200,58 @@ const VoiceReceptionist = () => {
     if (index >= 0 && index < chats.length) setActiveChat(index);
   };
 
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
   // 🎤 Mic button component
-  const MicButton = ({ recording, onToggle }: { recording: boolean; onToggle: () => void }) => (
+  const MicButton = ({
+    recording,
+    onToggle,
+  }: {
+    recording: boolean;
+    onToggle: () => void;
+  }) => (
     <button
       onClick={onToggle}
       className={`relative mt-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-        ${recording ? "bg-red-600 animate-pulse" : "bg-green-500 hover:bg-green-600"}`}
+        ${
+          recording
+            ? "bg-red-600 animate-pulse"
+            : "bg-green-500 hover:bg-green-600"
+        }`}
     >
       {recording && (
         <span className="absolute inset-0 rounded-full border-4 border-red-500 animate-ping"></span>
       )}
       {!recording ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3zM5 10a7 7 0 0014 0M12 17v4m-4 0h8" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-8 h-8 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3zM5 10a7 7 0 0014 0M12 17v4m-4 0h8"
+          />
         </svg>
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="6" y="4" width="4" height="16" rx="1" />
           <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
@@ -226,24 +263,47 @@ const VoiceReceptionist = () => {
   return (
     <div className="flex h-screen bg-gray-100 text-black">
       {!chatStarted ? (
-        <div className="flex flex-col items-center justify-center w-full">
-          <div className="border rounded-full h-50 w-50 mb-3">
-            <img src={img.doctor_img} alt="AI Avatar" className="w-full h-full rounded-full" />
+        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gray-100 p-6">
+          {/* Glass card */}
+          <div className="backdrop-blur-xl bg-white/40 border border-white/30 shadow-lg rounded-3xl p-10 flex flex-col items-center text-center">
+            {/* Avatar */}
+            <div className="relative w-44 h-44 mb-6 border-4 border-blue-500 rounded-full overflow-hidden shadow-md">
+              <img
+                src={img.doctor_img}
+                alt="AI Avatar"
+                className="w-full h-full object-cover rounded-full"
+              />
+              <div className="absolute inset-0 rounded-full border-4 border-blue-400/30" />
+            </div>
+
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-blue-800 mb-3">
+              🏥 Welcome to{" "}
+              <span className="text-blue-600">Voice AI Receptionist</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-gray-600 mb-8 max-w-md">
+              Click below to start your conversation with our AI receptionist.
+            </p>
+
+            {/* Button */}
+            <button
+              onClick={handleStartChat}
+              className="bg-green-600 px-8 py-3 rounded-xl text-white text-lg font-medium hover:bg-green-700 transition-all border-none"
+            >
+              Start Chat
+            </button>
           </div>
-          <h1 className="text-3xl mb-4 font-semibold">🏥 Welcome to Voice AI Receptionist</h1>
-          <p className="text-gray-400 mb-6 text-center max-w-md">
-            Click below to start your conversation with our AI receptionist.
-          </p>
-          <button
-            onClick={handleStartChat}
-            className="bg-green-600 cursor-pointer px-6 py-3 rounded-xl text-white text-lg hover:bg-green-700 transition-all"
-          >
-            Start Chat
-          </button>
         </div>
       ) : (
         <>
-          <Sidebar chats={chats} activeChat={activeChat} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+          <Sidebar
+            chats={chats}
+            activeChat={activeChat}
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+          />
 
           <div className="flex flex-col flex-1 items-center justify-center">
             <h1 className="text-[clamp(1.25rem,2vw+0.5rem,1.5rem)] font-semibold mb-4">
@@ -252,21 +312,28 @@ const VoiceReceptionist = () => {
 
             <div className="max-w-[90%] md:max-w-[80%] w-full h-[65vh] md:h-[70vh] overflow-y-auto hide-scrollbar p-3 md:p-4 rounded-xl">
               {messages.map((m, i) => (
-                <div key={i} className={`my-2 flex flex-col ${m.from === "user" ? "items-end" : "items-start"}`}>
+                <div
+                  key={i}
+                  className={`my-2 flex flex-col ${
+                    m.from === "user" ? "items-end" : "items-start"
+                  }`}
+                >
                   {/* 💬 Sender label */}
                   <span
-                    className={`text-xs font-semibold mb-1 ${m.from === "user" ? "text-blue-700" : "text-green-700"
-                      }`}
+                    className={`text-xs font-semibold mb-1 ${
+                      m.from === "user" ? "text-blue-700" : "text-green-700"
+                    }`}
                   >
                     {m.from === "user" ? "You" : "AI Receptionist"}
                   </span>
 
                   {/* 💭 Message bubble */}
                   <div
-                    className={`p-2 md:p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${m.from === "user"
-                      ? "bg-gradient-to-tl from-[#FBD6FF] to-[#C3EEFF] text-right ml-auto w-fit max-w-[85%]"
-                      : "bg-gradient-to-tl from-[#C3EEFF] to-[#FBD6FF] text-left mr-auto w-fit max-w-[85%]"
-                      }`}
+                    className={`p-2 md:p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${
+                      m.from === "user"
+                        ? "bg-gradient-to-tl from-[#FBD6FF] to-[#C3EEFF] text-right ml-auto w-fit max-w-[85%]"
+                        : "bg-gradient-to-tl from-[#C3EEFF] to-[#FBD6FF] text-left mr-auto w-fit max-w-[85%]"
+                    }`}
                   >
                     {m.text}
                   </div>
@@ -278,6 +345,8 @@ const VoiceReceptionist = () => {
                   Typing...
                 </div>
               )}
+
+              <div ref={messagesEndRef} />
             </div>
 
             <MicButton
@@ -302,4 +371,4 @@ const VoiceReceptionist = () => {
   );
 };
 
-export default VoiceReceptionist;  
+export default VoiceReceptionist;
