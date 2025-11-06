@@ -129,10 +129,8 @@ const VoiceReceptionist = () => {
 
         try {
           const formData = new FormData();
-          formData.append("file", audioBlob, "audio.webm");
-
-          // 👇 Add recognized text also
-          formData.append("text", recognizedTextRef.current || "");
+          formData.append("file", audioBlob, "audio.wav");
+          // formData.append("text", recognizedTextRef.current || "");
 
           const response = await fetch("http://127.0.0.1:8000/stt", {
             method: "POST",
