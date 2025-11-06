@@ -252,6 +252,7 @@ const VoiceReceptionist = () => {
               🏥 Welcome to{" "}
               <span className="text-blue-600">Voice AI Receptionist</span>
             </h1>
+            
 
             <p className="text-gray-600 mb-8 max-w-md">
               Click below to start your conversation with our AI receptionist.
@@ -275,10 +276,22 @@ const VoiceReceptionist = () => {
           />
 
           <div className="flex flex-col flex-1 items-center justify-center">
-            <h1 className="text-xl font-semibold mb-4">
+            <h1 className="text-xl font-semibold mb-4 hidden md:flex py-4">
               🏥 AI Voice Receptionist
             </h1>
-
+             <div className="flex items-center gap-3 md:hidden py-4 py-lg-0">
+          <img
+            src={img.doctor_img}
+            alt="AI Avatar"
+            className="w-14 h-14 rounded-full border border-blue-500 shadow-md"
+          />
+          <div>
+            <h2 className="text-black font-semibold text-lg">AI Receptionist</h2>
+            <p className="text-gray-800 text-xs leading-tight">
+              Your voice assistant
+            </p>
+          </div>
+        </div>
             <div className="max-w-[90%] md:max-w-[80%] w-full h-[65vh] md:h-[70vh] overflow-y-auto hide-scrollbar p-3 md:p-4 rounded-xl">
               {messages.map((m, i) => (
                 <div

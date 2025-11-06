@@ -22,7 +22,7 @@ const Sidebar = ({
   return (
     <>
       {/* 📱 Mobile Header with AI avatar visible */}
-      <div className="lg:hidden px-4 py-3 bg-white border-b border-gray-800 ">
+      <div className="hidden px-4 py-3 bg-white border-b border-gray-800 ">
         <div className="flex items-center gap-3">
           <img
             src={img.doctor_img}
