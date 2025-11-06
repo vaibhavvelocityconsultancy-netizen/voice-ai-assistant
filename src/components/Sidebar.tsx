@@ -22,8 +22,8 @@ const Sidebar = ({
   return (
     <>
       {/* 📱 Mobile Header with AI avatar visible */}
-      <div className="hidden px-4 py-3 bg-white border-b border-gray-800 ">
-        <div className="flex items-center gap-3">
+      <div className="hidden  px-4 py-3 bg-white border-b border-gray-800 ">
+        <div className="flex  gap-3">
           <img
             src={img.doctor_img}
             alt="AI Avatar"
@@ -52,7 +52,7 @@ const Sidebar = ({
         `}
       >
         {/* 🧭 Sidebar Header (desktop only) */}
-        <div className="hidden lg:flex flex-col items-center justify-center gap-2 p-6 border-b border-gray-700">
+        <div className="hidden md:flex flex-col items-center justify-center gap-2 p-6 border-b border-gray-700">
           <img
             src={img.doctor_img}
             alt="AI Avatar"
