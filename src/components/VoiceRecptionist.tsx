@@ -135,7 +135,7 @@ const VoiceReceptionist = () => {
           formData.append("file", audioBlob, "audio.wav");
           formData.append("text", recognizedTextRef.current || "");
 
-          const response = await fetch("http://127.0.0.1:8000/stt", {
+          const response = await fetch("http://127.0.0.1:8000/appointment", {
             method: "POST",
             body: formData,
           });
@@ -250,7 +250,7 @@ const VoiceReceptionist = () => {
 
             <h1 className="text-3xl font-bold text-blue-800 mb-3">
               🏥 Welcome to{" "}
-              <span className="text-blue-600">Voice AI Receptionist</span>
+              <span className="text-blue-600">Voicse AI Receptionist</span>
             </h1>
             
 
