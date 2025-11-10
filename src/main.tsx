@@ -3,7 +3,7 @@ import './index.css'
 import App from './App';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import ReceptionSelector from './components/ReceptionSelector';
-import VoiceReceptionist from './components/VoiceRecptionist';
+import VoiceReceptionist from './components/AppointmentReceptionist';
 import InsuranceReception from './components/InsuranceReception';
 
 const router = createBrowserRouter(

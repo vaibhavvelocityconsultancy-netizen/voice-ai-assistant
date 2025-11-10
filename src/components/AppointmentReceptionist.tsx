@@ -49,7 +49,9 @@ const VoiceReceptionist = () => {
     setChatStarted(true);
 
     try {
-      const response = await fetch("http://localhost:8000/start?bot=appointment");
+      const response = await fetch(
+        "http://localhost:8000/start?bot=appointment"
+      );
 
       if (!response.ok) throw new Error("Greeting failed");
 
@@ -252,15 +254,15 @@ const VoiceReceptionist = () => {
           <div className="backdrop-blur-xl bg-white/40 border border-white/30 shadow-lg rounded-3xl p-10 flex flex-col items-center text-center">
             <div className="relative w-44 h-44 mb-6 border-4 border-blue-500 rounded-full overflow-hidden shadow-md text-center mx-auto">
               <img
-                src={img.insurance_img}
+                src={img.doctor_img}
                 alt="AI Avatar"
                 className="w-full h-full object-cover rounded-full"
               />
             </div>
 
-            <h1 className="text-3xl font-bold text-blue-800 mb-3">
-              💼 Welcome to{" "}
-              <span className="text-blue-600">Insurance AI Receptionist</span>
+            <h1 className="text-3xl font-bold text-blue-800 mb-3 text-center">
+              💼 Welcome to your{" "}
+              <span className="text-blue-600">AI Appointment Assistant</span>
             </h1>
 
             <p className="text-gray-600 mb-8 max-w-md">
