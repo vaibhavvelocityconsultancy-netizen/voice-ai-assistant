@@ -17,7 +17,7 @@ interface Chat {
 // ✅ Extend browser SpeechRecognition type
 type ExtendedSpeechRecognition = SpeechRecognition;
 
-const VoiceReceptionist = () => {
+const InsuranceReception = () => {
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
@@ -28,7 +28,6 @@ const VoiceReceptionist = () => {
 
   const [activeChat, setActiveChat] = useState(0);
   const navigate = useNavigate();
-
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const recognizedTextRef = useRef<string>("");
 
@@ -49,7 +48,7 @@ const VoiceReceptionist = () => {
     setChatStarted(true);
 
     try {
-      const response = await fetch("http://localhost:8000/start?bot=appointment");
+      const response = await fetch("http://localhost:8000/start?bot=insurance");
 
       if (!response.ok) throw new Error("Greeting failed");
 
@@ -137,7 +136,7 @@ const VoiceReceptionist = () => {
           formData.append("file", audioBlob, "audio.wav");
           formData.append("text", recognizedTextRef.current || "");
 
-          const response = await fetch("http://127.0.0.1:8000/appointment", {
+          const response = await fetch("http://127.0.0.1:8000/insurance", {
             method: "POST",
             body: formData,
           });
@@ -183,10 +182,10 @@ const VoiceReceptionist = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // const handleNewChat = () => {
-  //   setChats([...chats, { title: `Chat ${chats.length + 1}`, messages: [] }]);
-  //   setActiveChat(chats.length);
-  // };
+  //   const handleNewChat = () => {
+  //     setChats([...chats, { title: `Chat ${chats.length + 1}`, messages: [] }]);
+  //     setActiveChat(chats.length);
+  //   };
 
   const MicButton = ({
     recording,
@@ -277,12 +276,14 @@ const VoiceReceptionist = () => {
         </div>
       ) : (
         <>
+          {/* back button */}
+
           <Sidebar
             chats={chats}
             activeChat={activeChat}
             onSelectChat={setActiveChat}
-            avatar={img.doctor_img}
-            name="AI Receptionist - SARAH"
+            avatar={img.insurance_img}
+            name="AI Receptionist - Nate"
             subtitle="Your smart hospital assistant"
           />
 
@@ -364,4 +365,4 @@ const VoiceReceptionist = () => {
   );
 };
 
-export default VoiceReceptionist;
+export default InsuranceReception;
