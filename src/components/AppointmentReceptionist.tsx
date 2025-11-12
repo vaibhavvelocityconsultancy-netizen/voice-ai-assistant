@@ -14,6 +14,7 @@ interface Chat {
   messages: Message[];
 }
 
+
 // ✅ Extend browser SpeechRecognition type
 type ExtendedSpeechRecognition = SpeechRecognition;
 
@@ -36,13 +37,42 @@ const VoiceReceptionist = () => {
     () => chats[activeChat]?.messages ?? [],
     [chats, activeChat]
   );
+  const toSentenceCase = (text: string) => {
+    if (!text) return "";
+
+    // Trim + lowercase entire sentence first
+    let formatted = text.trim().toLowerCase();
+
+    // Capitalize first character of entire sentence
+    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+    // Always fix standalone " i " to " I "
+    formatted = formatted.replace(/\bi\b/g, "I");
+
+    // Capitalize after punctuation (.!?)
+    formatted = formatted.replace(/([.?!]\s*)([a-z])/g, (_match, p1, p2) => p1 + p2.toUpperCase());
+
+    // If the sentence doesn’t end with punctuation, add intelligently
+    if (!/[.?!]$/.test(formatted)) {
+      if (/(what|how|can|when|where|do|does|did|is|are|will|should)\b/i.test(formatted)) {
+        formatted += "?";
+      } else {
+        formatted += ".";
+      }
+    }
+
+    return formatted;
+  };
+
 
   // ✅ Browser TTS
   const speakText = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
+    const formatted = toSentenceCase(text);
+    const utterance = new SpeechSynthesisUtterance(formatted);
     utterance.lang = "en-US";
     speechSynthesis.speak(utterance);
   };
+
 
   // ✅ Start Chat (Greeting)
   const handleStartChat = async () => {
@@ -200,10 +230,9 @@ const VoiceReceptionist = () => {
     <button
       onClick={onToggle}
       className={`relative mt-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-        ${
-          recording
-            ? "bg-red-600 animate-pulse"
-            : "bg-green-500 hover:bg-green-600"
+        ${recording
+          ? "bg-red-600 animate-pulse"
+          : "bg-green-500 hover:bg-green-600"
         }`}
     >
       {!recording ? (
@@ -311,26 +340,23 @@ const VoiceReceptionist = () => {
               {messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`my-2 flex flex-col ${
-                    m.from === "user" ? "items-end" : "items-start"
-                  }`}
+                  className={`my-2 flex flex-col ${m.from === "user" ? "items-end" : "items-start"
+                    }`}
                 >
                   <span
-                    className={`text-xs font-semibold mb-1 ${
-                      m.from === "user" ? "text-blue-700" : "text-green-700"
-                    }`}
+                    className={`text-xs font-semibold mb-1 ${m.from === "user" ? "text-blue-700" : "text-green-700"
+                      }`}
                   >
                     {m.from === "user" ? "You" : "AI Receptionist"}
                   </span>
 
                   <div
-                    className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${
-                      m.from === "user"
+                    className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${m.from === "user"
                         ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
                         : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
-                    }`}
+                      }`}
                   >
-                    {m.text}
+                    {toSentenceCase(m.text)}
                   </div>
                 </div>
               ))}

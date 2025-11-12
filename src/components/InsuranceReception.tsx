@@ -14,6 +14,7 @@ interface Chat {
   messages: Message[];
 }
 
+
 // ✅ Extend browser SpeechRecognition type
 type ExtendedSpeechRecognition = SpeechRecognition;
 
@@ -28,6 +29,7 @@ const InsuranceReception = () => {
 
   const [activeChat, setActiveChat] = useState(0);
   const navigate = useNavigate();
+
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const recognizedTextRef = useRef<string>("");
 
@@ -35,20 +37,59 @@ const InsuranceReception = () => {
     () => chats[activeChat]?.messages ?? [],
     [chats, activeChat]
   );
+  const toSentenceCase = (text: string) => {
+    if (!text) return "";
+
+    // Trim + lowercase entire sentence first
+    let formatted = text.trim().toLowerCase();
+
+    // Capitalize first character
+    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+    // Fix standalone "i" to "I"
+    formatted = formatted.replace(/\bi\b/g, "I");
+
+    // Capitalize after punctuation (.!?)
+    formatted = formatted.replace(/([.?!]\s*)([a-z])/g, (_m, p1, p2) => p1 + p2.toUpperCase());
+
+    // Detect if sentence starts with a question word
+    const isQuestion = /^(what|how|can|when|where|do|does|did|is|are|will|should)\b/i.test(formatted);
+
+    // Add proper punctuation if missing
+    if (!/[.?!]$/.test(formatted)) {
+      if (isQuestion) {
+        formatted += "?";
+      } else {
+        formatted += ".";
+      }
+    }
+
+    // Fix common acronyms (optional, helpful for insurance)
+    formatted = formatted.replace(/\b(ai|otp|id|clm|atm|pan|aadhaar|policy)\b/gi, (match) =>
+      match.toUpperCase()
+    );
+
+    return formatted;
+  };
+
 
   // ✅ Browser TTS
   const speakText = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
+    const formatted = toSentenceCase(text);
+    const utterance = new SpeechSynthesisUtterance(formatted);
     utterance.lang = "en-US";
     speechSynthesis.speak(utterance);
   };
+
 
   // ✅ Start Chat (Greeting)
   const handleStartChat = async () => {
     setChatStarted(true);
 
     try {
-      const response = await fetch("http://localhost:8000/start?bot=insurance");
+      const response = await fetch(
+        "http://localhost:8000/start?bot=insurance"
+      );
 
       if (!response.ok) throw new Error("Greeting failed");
 
@@ -182,10 +223,10 @@ const InsuranceReception = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  //   const handleNewChat = () => {
-  //     setChats([...chats, { title: `Chat ${chats.length + 1}`, messages: [] }]);
-  //     setActiveChat(chats.length);
-  //   };
+  // const handleNewChat = () => {
+  //   setChats([...chats, { title: `Chat ${chats.length + 1}`, messages: [] }]);
+  //   setActiveChat(chats.length);
+  // };
 
   const MicButton = ({
     recording,
@@ -197,10 +238,9 @@ const InsuranceReception = () => {
     <button
       onClick={onToggle}
       className={`relative mt-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-        ${
-          recording
-            ? "bg-red-600 animate-pulse"
-            : "bg-green-500 hover:bg-green-600"
+        ${recording
+          ? "bg-red-600 animate-pulse"
+          : "bg-green-500 hover:bg-green-600"
         }`}
     >
       {!recording ? (
@@ -257,9 +297,9 @@ const InsuranceReception = () => {
               />
             </div>
 
-            <h1 className="text-3xl font-bold text-blue-800 mb-3">
-              💼 Welcome to{" "}
-              <span className="text-blue-600">Insurance AI Receptionist</span>
+            <h1 className="text-3xl font-bold text-blue-800 mb-3 text-center">
+              💼 Welcome to your{" "}
+              <span className="text-blue-600">AI Insurance Assistant</span>
             </h1>
 
             <p className="text-gray-600 mb-8 max-w-md">
@@ -276,8 +316,6 @@ const InsuranceReception = () => {
         </div>
       ) : (
         <>
-          {/* back button */}
-
           <Sidebar
             chats={chats}
             activeChat={activeChat}
@@ -293,7 +331,7 @@ const InsuranceReception = () => {
             </h1>
             <div className="flex items-center gap-3 md:hidden py-4 py-lg-0">
               <img
-                src={img.doctor_img}
+                src={img.insurance_img}
                 alt="AI Avatar"
                 className="w-14 h-14 rounded-full border border-blue-500 shadow-md"
               />
@@ -310,33 +348,34 @@ const InsuranceReception = () => {
               {messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`my-2 flex flex-col ${
-                    m.from === "user" ? "items-end" : "items-start"
-                  }`}
+                  className={`my-2 flex flex-col ${m.from === "user" ? "items-end" : "items-start"
+                    }`}
                 >
                   <span
-                    className={`text-xs font-semibold mb-1 ${
-                      m.from === "user" ? "text-blue-700" : "text-green-700"
-                    }`}
+                    className={`text-xs font-semibold mb-1 ${m.from === "user" ? "text-blue-700" : "text-green-700"
+                      }`}
                   >
                     {m.from === "user" ? "You" : "AI Receptionist"}
                   </span>
 
                   <div
-                    className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${
-                      m.from === "user"
-                        ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
-                        : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
-                    }`}
+                    className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${m.from === "user"
+                      ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
+                      : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
+                      }`}
                   >
-                    {m.text}
+                    {toSentenceCase(m.text)}
                   </div>
                 </div>
               ))}
 
               {loading && (
-                <div className="bg-green-600 w-fit p-3 rounded-xl text-white animate-pulse">
-                  Typing...
+                <div className="flex items-center justify-center bg-white border border-gray-300 px-4 py-2 rounded-2xl shadow-sm w-fit">
+                  <div className="flex space-x-1">
+                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0s]" />
+                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.15s]" />
+                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.3s]" />
+                  </div>
                 </div>
               )}
 
