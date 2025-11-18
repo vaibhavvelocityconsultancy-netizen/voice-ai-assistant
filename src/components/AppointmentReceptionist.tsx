@@ -40,7 +40,8 @@ const VoiceReceptionist = () => {
   // ✅ Browser TTS
   const speakText = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
+    utterance.lang = "ru-RU";
+    utterance.text = "Ваша запись подтверждена."
     speechSynthesis.speak(utterance);
   };
 
