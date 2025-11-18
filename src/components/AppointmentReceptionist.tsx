@@ -69,7 +69,7 @@ const VoiceReceptionist = () => {
   const speakText = (text: string) => {
     const formatted = toSentenceCase(text);
     const utterance = new SpeechSynthesisUtterance(formatted);
-    utterance.lang = "en-US";
+    utterance.lang = "ru-RU";
     speechSynthesis.speak(utterance);
   };
 
