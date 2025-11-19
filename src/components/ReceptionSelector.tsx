@@ -7,7 +7,7 @@ const ReceptionSelector = () => {
       title: "Appointment",
       desc: "Talk to our AI receptionist for appointments, queries, and assistance.",
       path: "/voice-receptionist",
-      img: img.doctor_img,
+      img: img.insurance_img  ,
     },
     {
       title: "Insurance",

@@ -20,8 +20,8 @@ const Sidebar = ({
   chats = [],
   activeChat,
   onSelectChat,
-  avatar = img.doctor_img, // ✅ default image
-  name = "AI Receptionist - SARAH", // ✅ default name
+  avatar = img.insurance_img, // ✅ default image
+  name = "AI Receptionist - Nate", // ✅ default name
   subtitle = "Your smart assistant for patient queries", // ✅ default subtitle
 }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);

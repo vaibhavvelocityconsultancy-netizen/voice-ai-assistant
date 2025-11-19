@@ -40,19 +40,25 @@ const VoiceReceptionist = () => {
   const toSentenceCase = (text: string) => {
     if (!text) return "";
 
-    // Trim + lowercase entire sentence first
+    // ✔ Detect Russian characters (Unicode: 0400–04FF)
+    const isRussian = /[\u0400-\u04FF]/.test(text);
+
+    if (isRussian) {
+      return text.trim(); // DO NOT modify Russian sentences
+    }
+
+    // -----------------------
+    // ENGLISH Formatting (Keep your logic)
+    // -----------------------
+
     let formatted = text.trim().toLowerCase();
 
-    // Capitalize first character of entire sentence
     formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
 
-    // Always fix standalone " i " to " I "
     formatted = formatted.replace(/\bi\b/g, "I");
 
-    // Capitalize after punctuation (.!?)
     formatted = formatted.replace(/([.?!]\s*)([a-z])/g, (_match, p1, p2) => p1 + p2.toUpperCase());
 
-    // If the sentence doesn’t end with punctuation, add intelligently
     if (!/[.?!]$/.test(formatted)) {
       if (/(what|how|can|when|where|do|does|did|is|are|will|should)\b/i.test(formatted)) {
         formatted += "?";
@@ -73,6 +79,45 @@ const VoiceReceptionist = () => {
     speechSynthesis.speak(utterance);
   };
 
+  function decodeBase64ToUTF8(base64: string) {
+    try {
+      return decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+    } catch (e) {
+      console.error("Decode error:", e);
+      return base64;
+    }
+  }
+
+  function russianDigitWordsToNumbers(text: string): string {
+    const map: Record<string, string> = {
+      "ноль": "0",
+      "один": "1",
+      "два": "2",
+      "три": "3",
+      "четыре": "4",
+      "пять": "5",
+      "шесть": "6",
+      "семь": "7",
+      "восемь": "8",
+      "девять": "9"
+    };
+
+    let result = text;
+
+    // Replace each Russian word with digit
+    Object.keys(map).forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, "gi");
+      result = result.replace(regex, map[word]);
+    });
+
+    return result;
+  }
+
 
   // ✅ Start Chat (Greeting)
   const handleStartChat = async () => {
@@ -80,12 +125,15 @@ const VoiceReceptionist = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/start?bot=appointment"
+        "http://localhost:8000/greeting/appointment_ru"
       );
 
       if (!response.ok) throw new Error("Greeting failed");
 
-      const botReply = response.headers.get("X-Text-Response") || "Hi there!";
+      const encoded = response.headers.get("X-Text-Response") || "hi";
+      const botReply = decodeBase64ToUTF8(encoded);
+      console.log(botReply);
+
       const responseBlob: Blob = await response.blob();
 
       setChats((prevChats) => {
@@ -120,14 +168,17 @@ const VoiceReceptionist = () => {
     const recognition =
       new SpeechRecognitionConstructor() as ExtendedSpeechRecognition;
 
-    recognition.lang = "en-US";
+    recognition.lang = "ru-RU";
     recognition.interimResults = true;
     recognition.continuous = true;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = Array.from(event.results)
+      let transcript = Array.from(event.results)
         .map((res) => res[0].transcript)
         .join("");
+
+      // ⭐ Convert Russian spoken digits into numeric digits
+      transcript = russianDigitWordsToNumbers(transcript);
 
       recognizedTextRef.current = transcript;
 
@@ -169,12 +220,19 @@ const VoiceReceptionist = () => {
           formData.append("file", audioBlob, "audio.wav");
           formData.append("text", recognizedTextRef.current || "");
 
-          const response = await fetch("http://127.0.0.1:8000/appointment", {
+          const response = await fetch("http://127.0.0.1:8000/chat?bot_type=appointment_ru", {
             method: "POST",
             body: formData,
           });
+          console.log(response);
+          // const encoded = response.headers.get("X-Text-Response") || "hi";
+          // const botReply = decodeBase64ToUTF8(encoded);
 
-          const botReply = response.headers.get("X-Text-Response") ?? "";
+
+          const encoded = response.headers.get("X-Text-Response") ?? "";
+          const botReply = decodeBase64ToUTF8(encoded);
+          console.log(botReply);
+
           const responseBlob = await response.blob();
           const audio = new Audio(URL.createObjectURL(responseBlob));
 
@@ -283,7 +341,7 @@ const VoiceReceptionist = () => {
           <div className="backdrop-blur-xl bg-white/40 border border-white/30 shadow-lg rounded-3xl p-10 flex flex-col items-center text-center">
             <div className="relative w-44 h-44 mb-6 border-4 border-blue-500 rounded-full overflow-hidden shadow-md text-center mx-auto">
               <img
-                src={img.doctor_img}
+                src={img.insurance_img}
                 alt="AI Avatar"
                 className="w-full h-full object-cover rounded-full"
               />
@@ -312,8 +370,8 @@ const VoiceReceptionist = () => {
             chats={chats}
             activeChat={activeChat}
             onSelectChat={setActiveChat}
-            avatar={img.doctor_img}
-            name="AI Receptionist - SARAH"
+            avatar={img.insurance_img}
+            name="AI Receptionist - Nate"
             subtitle="Your smart hospital assistant"
           />
 
@@ -352,8 +410,8 @@ const VoiceReceptionist = () => {
 
                   <div
                     className={`p-3 rounded-xl text-sm md:text-base font-medium shadow-sm ${m.from === "user"
-                        ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
-                        : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
+                      ? "bg-linear-to-tl from-[#FBD6FF] to-[#C3EEFF] ml-auto"
+                      : "bg-linear-to-tl from-[#C3EEFF] to-[#FBD6FF] mr-auto"
                       }`}
                   >
                     {toSentenceCase(m.text)}
